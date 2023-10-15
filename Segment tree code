@@ -1,0 +1,224 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+class SegTree
+{
+private:
+    vector<int> seg;
+    vector<int> lazy;
+
+public:
+    SegTree(int sz)
+    {
+        seg.resize(4 * sz + 2);
+        lazy.resize(4 * sz + 2);
+        for (int i = 0; i < lazy.size(); i++)
+            lazy[i] = 0;
+    }
+
+    void build(int ind, int low, int high, vector<int> &arr)
+    {
+        if (low == high)
+        {
+            seg[ind] = arr[low];
+            return;
+        }
+
+        int mid = (low + high) / 2;
+
+        build(2 * ind + 1, low, mid, arr);
+        build(2 * ind + 2, mid + 1, high, arr);
+
+        seg[ind] = seg[2 * ind + 1] + seg[2 * ind + 2];
+    }
+
+    void update(int ind, int val, int seg_ind, int low, int high)
+    {
+        if (low == high)
+        {
+            seg[seg_ind] = val;
+            return;
+        }
+
+        int mid = (low + high) / 2;
+        if (ind <= mid)
+            update(ind, val, 2 * seg_ind + 1, low, mid);
+        else
+            update(ind, val, 2 * seg_ind + 2, mid + 1, high);
+
+        seg[seg_ind] = seg[2 * seg_ind + 1] + seg[2 * seg_ind + 2];
+    }
+
+    void lazy_update(int ind, int val, int l, int r, int low, int high) // for added val to the existing values in the range [l-r]
+    {
+        // check for any remaining updates
+        if (lazy[ind] != 0)
+        {
+            seg[ind] += (lazy[ind] * (high - low + 1));
+            if (high != low)
+            {
+                lazy[2 * ind + 1] += lazy[ind];
+                lazy[2 * ind + 2] += lazy[ind];
+            }
+            lazy[ind] = 0;
+        }
+
+        if (l > high || r < low)
+            return;
+
+        if (l <= low && r >= high)
+        {
+            seg[ind] += (val * (high - low + 1)); // for added val to the existing values in the range [l-r]
+            if (low != high)
+            {
+                lazy[2 * ind + 1] += val;
+                lazy[2 * ind + 2] += val;
+            }
+            return;
+        }
+
+        int mid = (low + high) / 2;
+        lazy_update(2 * ind + 1, val, l, r, low, mid);
+        lazy_update(2 * ind + 2, val, l, r, mid + 1, high);
+
+        seg[ind] = seg[2 * ind + 1] + seg[2 * ind + 2];
+    }
+
+    void lazy_update_2(int ind, int val, int l, int r, int low, int high) // for changing values in the range [l-r]
+    {
+        // check for any remaining updates
+        if (lazy[ind] != 0)
+        {
+            seg[ind] = (lazy[ind] * (high - low + 1));
+            if (high != low)
+            {
+                lazy[2 * ind + 1] = lazy[ind];
+                lazy[2 * ind + 2] = lazy[ind];
+            }
+            lazy[ind] = 0;
+        }
+
+        if (l > high || r < low)
+            return;
+
+        if (l <= low && r >= high)
+        {
+            seg[ind] = (val * (high - low + 1)); // for changing values in the range [l-r]
+            if (low != high)
+            {
+                lazy[2 * ind + 1] = val;
+                lazy[2 * ind + 2] = val;
+            }
+            return;
+        }
+
+        int mid = (low + high) / 2;
+        lazy_update_2(2 * ind + 1, val, l, r, low, mid);
+        lazy_update_2(2 * ind + 2, val, l, r, mid + 1, high);
+
+        seg[ind] = seg[2 * ind + 1] + seg[2 * ind + 2];
+    }
+
+    int range_query(int ind, int l, int r, int low, int high)
+    {
+        if (l <= low && r >= high)
+            return seg[ind];
+
+        if (l > high || r < low)
+            return 0;
+
+        int mid = (low + high) / 2;
+        return range_query(2 * ind + 1, l, r, low, mid) + range_query(2 * ind + 2, l, r, mid + 1, high);
+    }
+
+    int lazy_range_query(int ind, int l, int r, int low, int high) // for added val to the existing values in the range [l-r]
+    {
+        // check for previour update remaining
+        if (lazy[ind] != 0)
+        {
+            seg[ind] += (lazy[ind] * (high - low + 1));
+            if (high != low)
+            {
+                lazy[2 * ind + 1] += lazy[ind];
+                lazy[2 * ind + 2] += lazy[ind];
+            }
+            lazy[ind] = 0;
+        }
+
+        if (l > high || r < low)
+            return 0;
+
+        if (l <= low && r >= high)
+            return seg[ind];
+
+        int mid = (low + high) / 2;
+        return lazy_range_query(2 * ind + 1, l, r, low, mid) + lazy_range_query(2 * ind + 2, l, r, mid + 1, high);
+    }
+
+    int lazy_range_query_2(int ind, int l, int r, int low, int high) // for changing values in the range [l-r]
+    {
+        // check for previour update remaining
+        if (lazy[ind] != 0)
+        {
+            seg[ind] = (lazy[ind] * (high - low + 1));
+            if (high != low)
+            {
+                lazy[2 * ind + 1] = lazy[ind];
+                lazy[2 * ind + 2] = lazy[ind];
+            }
+            lazy[ind] = 0;
+        }
+
+        if (l > high || r < low)
+            return 0;
+
+        if (l <= low && r >= high)
+            return seg[ind];
+
+        int mid = (low + high) / 2;
+        return lazy_range_query_2(2 * ind + 1, l, r, low, mid) + lazy_range_query_2(2 * ind + 2, l, r, mid + 1, high);
+    }
+};
+
+signed main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n;
+    cin >> n;
+
+    vector<int> v(n);
+    for (int i = 0; i < n; i++)
+    {
+        cin >> v[i];
+    }
+
+    SegTree sg1(n);
+
+    sg1.build(0, 0, n - 1, v);
+
+    int q;
+    cin >> q;
+    for (int i = 0; i < q; i++)
+    {
+        int t;
+        cin >> t;
+
+        if (t == 1)
+        {
+            int ind, ind2, val;
+            cin >> ind >> ind2 >> val;
+            sg1.lazy_update_2(0, val, ind, ind2, 0, n - 1);
+        }
+        // for range_query
+        else
+        {
+            int l, r;
+            cin >> l >> r;
+            cout << sg1.lazy_range_query_2(0, l, r, 0, n - 1) << "\n";
+        }
+    }
+
+    return 0;
+}
